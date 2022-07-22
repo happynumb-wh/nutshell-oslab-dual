@@ -167,5 +167,13 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
     io.mmio <> mmioXbar.io.out
   }
 
+  // Hook up CLINT and PLIC interrupts
+  val mtipSync: Bool = WireInit(Bool(), DontCare)
+  val msipSync: Bool = WireInit(Bool(), DontCare)
+  val meipSync: Bool = WireInit(Bool(), DontCare)
+  BoringUtils.addSource(mtipSync, "mtip")
+  BoringUtils.addSource(msipSync, "msip")
+  BoringUtils.addSource(meipSync, "meip")
+
   Debug("------------------------ BACKEND ------------------------\n")
 }
