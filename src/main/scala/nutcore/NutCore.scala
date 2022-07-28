@@ -67,7 +67,8 @@ abstract class NutCoreBundle extends Bundle with HasNutCoreParameter with HasNut
 case class NutCoreConfig (
   FPGAPlatform: Boolean = true,
   EnableDebug: Boolean = Settings.get("EnableDebug"),
-  EnhancedLog: Boolean = true 
+  EnhancedLog: Boolean = true,
+  HartID: Int = 0 // Change this for other harts
 )
 // Enable EnhancedLog will slow down simulation, 
 // but make it possible to control debug log using emu parameter

@@ -30,6 +30,7 @@ trait HasSoCParameter {
   val EnableILA = Settings.get("EnableILA")
   val HasL2cache = Settings.get("HasL2cache")
   val HasPrefetch = Settings.get("HasPrefetch")
+  val HasDualCore = Settings.get("HasDualCore")
 }
 
 class ILABundle extends NutCoreBundle {
@@ -117,7 +118,7 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
   BoringUtils.bore(mtipSync, Seq(nutcore.mtipSync))
   BoringUtils.bore(msipSync, Seq(nutcore.msipSync))
 
-  val plic = Module(new AXI4PLIC(nrIntr = Settings.getInt("NrExtIntr"), nrHart = 1))
+  val plic = Module(new AXI4PLIC(nrIntr = Settings.getInt("NrExtIntr"), nrHart = if (HasDualCore) 2 else 1))
   plic.io.in <> mmioXbar.io.out(2).toAXI4Lite()
   plic.io.extra.get.intrVec := RegNext(RegNext(io.meip))
   val meipSync = plic.io.extra.get.meip(0)
@@ -140,5 +141,52 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
     BoringUtilsConnect(ila.WBUrfDest  ,"ilaWBUrfDest")
     BoringUtilsConnect(ila.WBUrfData  ,"ilaWBUrfData")
     BoringUtilsConnect(ila.InstrCnt   ,"ilaInstrCnt")
+  }
+
+  if (HasDualCore) {
+    val p1 = p.copy(HartID = 1)
+    val nutcore1 = Module(new NutCore()(p1))
+    val cohMg1 = Module(new CoherenceManager)
+    val xbar1 = Module(new SimpleBusCrossbarNto1(2))
+    cohMg1.io.in <> nutcore1.io.imem.mem
+    nutcore1.io.dmem.coh <> cohMg1.io.out.coh
+    xbar1.io.in(0) <> cohMg1.io.out.mem
+    xbar1.io.in(1) <> nutcore1.io.dmem.mem
+
+    val memport1 = xbar1.io.out.toMemPort()
+    memport1.resp.bits.data := DontCare
+    memport1.resp.valid := DontCare
+    memport1.req.ready := DontCare
+
+    // Dual Core automatically disables L2 cache
+    val ccc = new CrossCoreCoherence(2)
+    ccc.io.in(0) <> xbar.io.out
+    ccc.io.in(1) <> xbar1.io.out
+    memAddrMap.io.in <> ccc.io.out
+
+    nutcore1.io.imem.coh.resp.ready := true.B
+    nutcore1.io.imem.coh.req.valid := false.B
+    nutcore1.io.imem.coh.req.bits := DontCare
+
+    val mmioXbar1 = Module(new SimpleBusCrossbar1toN(addrSpace))
+    mmioXbar1.io.in <> nutcore1.io.mmio
+
+    val extDev1 = mmioXbar1.io.out(0)
+    val extDevXbar = Module(new SimpleBusCrossbarNto1(2))
+    extDevXbar.io.in(0) <> extDev
+    extDevXbar.io.in(1) <> extDev1
+    if (p.FPGAPlatform) { io.mmio <> extDevXbar.io.out.toAXI4() }
+    else { io.mmio <> extDevXbar.io.out }
+
+    val clint1 = Module(new AXI4CLINT(sim = !p.FPGAPlatform))
+    clint1.io.in <> mmioXbar1.io.out(1).toAXI4Lite()
+    BoringUtils.bore(clint1.io.extra.get.mtip, Seq(nutcore1.mtipSync))
+    BoringUtils.bore(clint1.io.extra.get.msip, Seq(nutcore1.msipSync))
+
+    val plicXbar = Module(new SimpleBusCrossbarNto1(2))
+    plicXbar.io.in(0) <> mmioXbar.io.out(2)
+    plicXbar.io.in(1) <> mmioXbar1.io.out(2)
+    plic.io.in <> plicXbar.io.out.toAXI4Lite()
+    BoringUtils.bore(plic.io.extra.get.meip(1), Seq(nutcore1.meipSync))
   }
 }

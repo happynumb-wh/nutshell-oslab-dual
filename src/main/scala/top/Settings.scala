@@ -35,6 +35,7 @@ object DefaultSettings {
     "HasIcache" -> true,
     "MmodeOnly" -> false,
     "IsRV32" -> false,
+    "HasDualCore" -> false,
 
     "FPGAPlatform" -> false,
     "EnableILA" -> true,
@@ -91,6 +92,14 @@ object EmbededSettings {
     "MmodeOnly" -> true,
     "IsRV32" -> true,
     "EnableRVC" -> false
+  )
+}
+
+object DualSettings {
+  def apply(): Map[String, Boolean] = Map(
+    "HasL2cache" -> false,
+    "HasPrefetch" -> false,
+    "HasDualCore" -> true
   )
 }
 
