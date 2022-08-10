@@ -18,7 +18,6 @@ package nutcore
 
 import chisel3._
 import chisel3.util._
-import chisel3.util.experimental.BoringUtils
 
 import utils._
 import top.Settings
@@ -71,7 +70,7 @@ class ALUIO extends FunctionUnitIO {
   val offset = Input(UInt(XLEN.W))
 }
 
-class ALU(hasBru: Boolean = false) extends NutCoreModule {
+class ALU(hasBru: Boolean = false)(implicit val p: NutCoreConfig) extends NutCoreModule {
   val io = IO(new ALUIO)
 
   val (valid, src1, src2, func) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func)

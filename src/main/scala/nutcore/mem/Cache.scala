@@ -18,7 +18,6 @@ package nutcore
 
 import chisel3._
 import chisel3.util._
-import chisel3.util.experimental.BoringUtils
 
 import bus.simplebus._
 import bus.axi4._
@@ -220,7 +219,7 @@ sealed class CacheStage2(implicit val cacheConfig: CacheConfig) extends CacheMod
 }
 
 // writeback
-sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheModule {
+sealed class CacheStage3(implicit val cacheConfig: CacheConfig, val ncConfig: NutCoreConfig) extends CacheModule {
   val io = IO(new Bundle {
     val in = Flipped(Decoupled(new Stage2IO))
     val out = Decoupled(new SimpleBusRespBundle(userBits = userBits, idBits = idBits))
@@ -462,7 +461,7 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
   Debug((state === s_memReadResp) && io.mem.resp.fire(), "[COUTR] cnt %x data %x tag %x idx %x waymask %b \n", readBeatCnt.value, io.mem.resp.bits.rdata, addr.tag, getMetaIdx(req.addr), io.in.bits.waymask)
 }
 
-class Cache(implicit val cacheConfig: CacheConfig) extends CacheModule {
+class Cache(implicit val cacheConfig: CacheConfig, val ncConfig: NutCoreConfig) extends CacheModule {
   val io = IO(new Bundle {
     val in = Flipped(new SimpleBusUC(userBits = userBits, idBits = idBits))
     val flush = Input(UInt(2.W))
@@ -546,7 +545,7 @@ class Cache(implicit val cacheConfig: CacheConfig) extends CacheModule {
   //s3.io.mem.dump(cacheName + ".mem")
 }
 
-class Cache_fake(implicit val cacheConfig: CacheConfig) extends CacheModule {
+class Cache_fake(implicit val cacheConfig: CacheConfig, val ncConfig: NutCoreConfig) extends CacheModule {
   val io = IO(new Bundle {
     val in = Flipped(new SimpleBusUC(userBits = userBits))
     val flush = Input(UInt(2.W))
@@ -674,7 +673,8 @@ class Cache_dummy(implicit val cacheConfig: CacheConfig) extends CacheModule {
 }
 
 object Cache {
-  def apply(in: SimpleBusUC, mmio: Seq[SimpleBusUC], flush: UInt, empty: Bool, enable: Boolean = true)(implicit cacheConfig: CacheConfig) = {
+  def apply(in: SimpleBusUC, mmio: Seq[SimpleBusUC], flush: UInt, empty: Bool, enable: Boolean = true)
+           (implicit cacheConfig: CacheConfig, ncConfig: NutCoreConfig): SimpleBusC = {
     val cache = if (enable) Module(new Cache) 
                 else (if (Settings.get("IsRV32")) 
                         (if (cacheConfig.name == "dcache") Module(new Cache_fake) else Module(new Cache_dummy)) 

@@ -18,7 +18,6 @@ package nutcore
 
 import chisel3._
 import chisel3.util._
-import chisel3.util.experimental.BoringUtils
 
 import bus.simplebus._
 import bus.axi4._
@@ -61,7 +60,7 @@ class EmbeddedTLBMD(implicit val tlbConfig: TLBConfig) extends TlbModule {
   def wready() = !resetState
 }
 
-class EmbeddedTLB(implicit val tlbConfig: TLBConfig) extends TlbModule{
+class EmbeddedTLB(implicit val tlbConfig: TLBConfig, val ncConfig: NutCoreConfig) extends TlbModule{
   val io = IO(new Bundle {
     val in = Flipped(new SimpleBusUC(userBits = userBits, addrBits = VAddrBits))
     val out = new SimpleBusUC(userBits = userBits)
@@ -169,7 +168,7 @@ class EmbeddedTLB(implicit val tlbConfig: TLBConfig) extends TlbModule{
   Debug("satp:%x flush:%d cacheEmpty:%d instrPF:%d loadPF:%d storePF:%d \n", satp, io.flush, io.cacheEmpty, io.ipf, io.csrMMU.loadPF, io.csrMMU.storePF)
 }
 
-class EmbeddedTLBExec(implicit val tlbConfig: TLBConfig) extends TlbModule{
+class EmbeddedTLBExec(implicit val tlbConfig: TLBConfig, val ncConfig: NutCoreConfig) extends TlbModule{
   val io = IO(new Bundle {
     val in = Flipped(Decoupled(new SimpleBusReqBundle(userBits = userBits, addrBits = VAddrBits)))
     val out = Decoupled(new SimpleBusReqBundle(userBits = userBits))
@@ -422,7 +421,7 @@ class EmbeddedTLB_fake(implicit val tlbConfig: TLBConfig) extends TlbModule{
 
 
 object EmbeddedTLB {
-  def apply(in: SimpleBusUC, mem: SimpleBusUC, flush: Bool, csrMMU: MMUIO, enable: Boolean = true)(implicit tlbConfig: TLBConfig) = {
+  def apply(in: SimpleBusUC, mem: SimpleBusUC, flush: Bool, csrMMU: MMUIO, enable: Boolean = true)(implicit tlbConfig: TLBConfig, ncConfig: NutCoreConfig) = {
     if (enable) {
       val tlb = Module(new EmbeddedTLB)
       tlb.io.in <> in

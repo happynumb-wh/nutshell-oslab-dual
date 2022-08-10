@@ -18,7 +18,6 @@ package nutcore
 
 import chisel3._
 import chisel3.util._
-import chisel3.util.experimental.BoringUtils
 
 import bus.simplebus._
 import bus.axi4._
@@ -116,7 +115,7 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
     val itlb = TLB(in = frontend.io.imem, mem = dmemXbar.io.in(2), flush = frontend.io.flushVec(0) | frontend.io.bpFlush, csrMMU = backend.io.memMMU.imem)(TLBConfig(name = "itlb", userBits = ICacheUserBundleWidth, totalEntry = 4))
     frontend.io.ipf := itlb.io.ipf
     io.imem <> Cache(in = itlb.io.out, mmio = mmioXbar.io.in.take(1), flush = Fill(2, frontend.io.flushVec(0) | frontend.io.bpFlush), empty = itlb.io.cacheEmpty)(
-      CacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth))
+      CacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth), p)
     
     val dtlb = TLB(in = backend.io.dtlb, mem = dmemXbar.io.in(1), flush = frontend.io.flushVec(3), csrMMU = backend.io.memMMU.dmem)(TLBConfig(name = "dtlb", userBits = DCacheUserBundleWidth, totalEntry = 64))
     dtlb.io.out := DontCare //FIXIT
@@ -125,13 +124,13 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
     if (EnableVirtualMemory) {
       dmemXbar.io.in(3) <> backend.io.dmem
       io.dmem <> Cache(in = dmemXbar.io.out, mmio = mmioXbar.io.in.drop(1), flush = "b00".U, empty = dtlb.io.cacheEmpty, enable = HasDcache)(
-        CacheConfig(ro = false, name = "dcache", userBits = DCacheUserBundleWidth, idBits = 4))
+        CacheConfig(ro = false, name = "dcache", userBits = DCacheUserBundleWidth, idBits = 4), p)
     } else {
       dmemXbar.io.in(1) := DontCare
       dmemXbar.io.in(3) := DontCare
       dmemXbar.io.out := DontCare
       io.dmem <> Cache(in = backend.io.dmem, mmio = mmioXbar.io.in.drop(1), flush = "b00".U, empty = dtlb.io.cacheEmpty, enable = HasDcache)(
-        CacheConfig(ro = false, name = "dcache", userBits = DCacheUserBundleWidth))
+        CacheConfig(ro = false, name = "dcache", userBits = DCacheUserBundleWidth), p)
     }
 
     // Make DMA access through L1 DCache to keep coherence
@@ -149,14 +148,25 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
     val mmioXbar = Module(new SimpleBusCrossbarNto1(2))
     val dmemXbar = Module(new SimpleBusCrossbarNto1(4))
 
-    val itlb = EmbeddedTLB(in = frontend.io.imem, mem = dmemXbar.io.in(1), flush = frontend.io.flushVec(0) | frontend.io.bpFlush, csrMMU = backend.io.memMMU.imem, enable = HasITLB)(TLBConfig(name = "itlb", userBits = ICacheUserBundleWidth, totalEntry = 4))
+    val itlb = EmbeddedTLB(
+      in = frontend.io.imem, mem = dmemXbar.io.in(1), flush = frontend.io.flushVec(0) | frontend.io.bpFlush,
+      csrMMU = backend.io.memMMU.imem, enable = HasITLB
+    )(TLBConfig(name = "itlb", userBits = ICacheUserBundleWidth, totalEntry = 4), p)
     frontend.io.ipf := itlb.io.ipf
-    io.imem <> Cache(in = itlb.io.out, mmio = mmioXbar.io.in.take(1), flush = Fill(2, frontend.io.flushVec(0) | frontend.io.bpFlush), empty = itlb.io.cacheEmpty, enable = HasIcache)(CacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth))
+    io.imem <> Cache(
+      in = itlb.io.out, mmio = mmioXbar.io.in.take(1), flush = Fill(2, frontend.io.flushVec(0) | frontend.io.bpFlush),
+      empty = itlb.io.cacheEmpty, enable = HasIcache
+    )(CacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth), p)
     
     // dtlb
-    val dtlb = EmbeddedTLB(in = backend.io.dmem, mem = dmemXbar.io.in(2), flush = false.B, csrMMU = backend.io.memMMU.dmem, enable = HasDTLB)(TLBConfig(name = "dtlb", totalEntry = 64))
+    val dtlb = EmbeddedTLB(
+      in = backend.io.dmem, mem = dmemXbar.io.in(2), flush = false.B, csrMMU = backend.io.memMMU.dmem, enable = HasDTLB
+    )(TLBConfig(name = "dtlb", totalEntry = 64), p)
     dmemXbar.io.in(0) <> dtlb.io.out
-    io.dmem <> Cache(in = dmemXbar.io.out, mmio = mmioXbar.io.in.drop(1), flush = "b00".U, empty = dtlb.io.cacheEmpty, enable = HasDcache)(CacheConfig(ro = false, name = "dcache"))
+    io.dmem <> Cache(
+      in = dmemXbar.io.out, mmio = mmioXbar.io.in.drop(1), flush = "b00".U,
+      empty = dtlb.io.cacheEmpty, enable = HasDcache
+    )(CacheConfig(ro = false, name = "dcache"), p)
 
     // redirect
     frontend.io.redirect <> backend.io.redirect

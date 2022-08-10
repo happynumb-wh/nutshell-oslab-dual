@@ -17,7 +17,6 @@
 package nutcore
 import chisel3._
 import chisel3.util._
-import chisel3.util.experimental.BoringUtils
 
 import utils._
 import bus.simplebus._
@@ -33,7 +32,7 @@ class UnpipeLSUIO extends FunctionUnitIO {
   val storeAddrMisaligned = Output(Bool()) // TODO: refactor it for new backend
 }
 
-class UnpipelinedLSU extends NutCoreModule with HasLSUConst {
+class UnpipelinedLSU(implicit val p: NutCoreConfig) extends NutCoreModule with HasLSUConst {
   val io = IO(new UnpipeLSUIO)
   val (valid, src1, src2, func) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func)
   def access(valid: Bool, src1: UInt, src2: UInt, func: UInt, dtlbPF: Bool): UInt = {
@@ -286,7 +285,7 @@ class UnpipelinedLSU extends NutCoreModule with HasLSUConst {
     io.storeAddrMisaligned := lsExecUnit.io.storeAddrMisaligned
 }
 
-class LSExecUnit extends NutCoreModule {
+class LSExecUnit(implicit val p: NutCoreConfig) extends NutCoreModule {
   val io = IO(new UnpipeLSUIO)
 
   val (valid, addr, func) = (io.in.valid, io.in.bits.src1, io.in.bits.func) // src1 is used as address

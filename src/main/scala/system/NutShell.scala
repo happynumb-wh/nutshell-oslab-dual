@@ -80,7 +80,7 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
     } else xbar.io.out
     val l2Empty = Wire(Bool())
     l2cacheOut <> Cache(in = l2cacheIn, mmio = 0.U.asTypeOf(new SimpleBusUC) :: Nil, flush = "b00".U, empty = l2Empty, enable = true)(
-      CacheConfig(name = "l2cache", totalSize = 128, cacheLevel = 2))
+      CacheConfig(name = "l2cache", totalSize = 128, cacheLevel = 2), p)
     l2cacheOut.coh.resp.ready := true.B
     l2cacheOut.coh.req.valid := false.B
     l2cacheOut.coh.req.bits := DontCare
@@ -129,7 +129,7 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
   if (p.FPGAPlatform) {
     def BoringUtilsConnect(sink: UInt, id: String) {
       val temp = WireInit(0.U(64.W))
-      BoringUtils.addSink(temp, id)
+      BoringUtils.addSink(temp, id + p.HartID.toString)
       sink := temp
     }
 
@@ -141,6 +141,14 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
     BoringUtilsConnect(ila.WBUrfDest  ,"ilaWBUrfDest")
     BoringUtilsConnect(ila.WBUrfData  ,"ilaWBUrfData")
     BoringUtilsConnect(ila.InstrCnt   ,"ilaInstrCnt")
+
+    // Ignore ILA for Core 1; just prevent BoringUtils errors
+    BoringUtils.addSink(dummy.WBUpc, "ilaWBUpc1")
+    BoringUtils.addSink(dummy.WBUvalid, "ilaWBUvalid1")
+    BoringUtils.addSink(dummy.WBUrfWen, "ilaWBUrfWen1")
+    BoringUtils.addSink(dummy.WBUrfDest, "ilaWBUrfDest1")
+    BoringUtils.addSink(dummy.WBUrfData, "ilaWBUrfData1")
+    BoringUtils.addSink(dummy.InstrCnt, "ilaInstrCnt1")
   }
 
   if (HasDualCore) {
@@ -153,13 +161,15 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
     xbar1.io.in(0) <> cohMg1.io.out.mem
     xbar1.io.in(1) <> nutcore1.io.dmem.mem
 
+    nutcore1.io.frontend := DontCare
+
     val memport1 = xbar1.io.out.toMemPort()
     memport1.resp.bits.data := DontCare
     memport1.resp.valid := DontCare
     memport1.req.ready := DontCare
 
     // Dual Core automatically disables L2 cache
-    val ccc = new CrossCoreCoherence(2)
+    val ccc = Module(new CrossCoreCoherence(2))
     ccc.io.in(0) <> xbar.io.out
     ccc.io.in(1) <> xbar1.io.out
     memAddrMap.io.in <> ccc.io.out
