@@ -38,7 +38,7 @@ object LogUtil {
 
   def displayLog: Bool = {
     val enableDisplay = WireInit(false.B)
-    BoringUtils.addSink(enableDisplay, "DISPLAY_ENABLE")
+    util.experimental.BoringUtils.addSink(enableDisplay, "DISPLAY_ENABLE")
     enableDisplay
   }
 
