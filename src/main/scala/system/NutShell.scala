@@ -111,12 +111,10 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
   if (p.FPGAPlatform) { io.mmio <> extDev.toAXI4() }
   else { io.mmio <> extDev }
 
-  val clint = Module(new AXI4CLINT(sim = !p.FPGAPlatform))
+  val clint = Module(new AXI4CLINT(nrHart = if (HasDualCore) 2 else 1, sim = !p.FPGAPlatform))
   clint.io.in <> mmioXbar.io.out(1).toAXI4Lite()
-  val mtipSync = clint.io.extra.get.mtip
-  val msipSync = clint.io.extra.get.msip
-  BoringUtils.bore(mtipSync, Seq(nutcore.mtipSync))
-  BoringUtils.bore(msipSync, Seq(nutcore.msipSync))
+  BoringUtils.bore(clint.io.extra.get.mtip(0), Seq(nutcore.mtipSync))
+  BoringUtils.bore(clint.io.extra.get.msip(0), Seq(nutcore.msipSync))
 
   val plic = Module(new AXI4PLIC(nrIntr = Settings.getInt("NrExtIntr"), nrHart = if (HasDualCore) 2 else 1))
   plic.io.in <> mmioXbar.io.out(2).toAXI4Lite()
@@ -188,10 +186,12 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
     if (p.FPGAPlatform) { io.mmio <> extDevXbar.io.out.toAXI4() }
     else { io.mmio <> extDevXbar.io.out }
 
-    val clint1 = Module(new AXI4CLINT(sim = !p.FPGAPlatform))
-    clint1.io.in <> mmioXbar1.io.out(1).toAXI4Lite()
-    BoringUtils.bore(clint1.io.extra.get.mtip, Seq(nutcore1.mtipSync))
-    BoringUtils.bore(clint1.io.extra.get.msip, Seq(nutcore1.msipSync))
+    val clintXbar = Module(new SimpleBusCrossbarNto1(2))
+    clintXbar.io.in(0) <> mmioXbar.io.out(1)
+    clintXbar.io.in(1) <> mmioXbar1.io.out(1)
+    clint.io.in <> clintXbar.io.out.toAXI4Lite()
+    BoringUtils.bore(clint.io.extra.get.mtip(1), Seq(nutcore1.mtipSync))
+    BoringUtils.bore(clint.io.extra.get.msip(1), Seq(nutcore1.msipSync))
 
     val plicXbar = Module(new SimpleBusCrossbarNto1(2))
     plicXbar.io.in(0) <> mmioXbar.io.out(2)
