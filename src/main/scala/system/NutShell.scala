@@ -176,27 +176,13 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
     nutcore1.io.imem.coh.req.valid := false.B
     nutcore1.io.imem.coh.req.bits := DontCare
 
-    val mmioXbar1 = Module(new SimpleBusCrossbar1toN(addrSpace))
-    mmioXbar1.io.in <> nutcore1.io.mmio
+    val mmioBus = Module(new SimpleBusCrossbarNto1(2))
+    mmioBus.io.in(0) <> nutcore.io.mmio
+    mmioBus.io.in(1) <> nutcore1.io.mmio
+    mmioXbar.io.in <> mmioBus.io.out
 
-    val extDev1 = mmioXbar1.io.out(0)
-    val extDevXbar = Module(new SimpleBusCrossbarNto1(2))
-    extDevXbar.io.in(0) <> extDev
-    extDevXbar.io.in(1) <> extDev1
-    if (p.FPGAPlatform) { io.mmio <> extDevXbar.io.out.toAXI4() }
-    else { io.mmio <> extDevXbar.io.out }
-
-    val clintXbar = Module(new SimpleBusCrossbarNto1(2))
-    clintXbar.io.in(0) <> mmioXbar.io.out(1)
-    clintXbar.io.in(1) <> mmioXbar1.io.out(1)
-    clint.io.in <> clintXbar.io.out.toAXI4Lite()
     BoringUtils.bore(clint.io.extra.get.mtip(1), Seq(nutcore1.mtipSync))
     BoringUtils.bore(clint.io.extra.get.msip(1), Seq(nutcore1.msipSync))
-
-    val plicXbar = Module(new SimpleBusCrossbarNto1(2))
-    plicXbar.io.in(0) <> mmioXbar.io.out(2)
-    plicXbar.io.in(1) <> mmioXbar1.io.out(2)
-    plic.io.in <> plicXbar.io.out.toAXI4Lite()
     BoringUtils.bore(plic.io.extra.get.meip(1), Seq(nutcore1.meipSync))
   }
 }
