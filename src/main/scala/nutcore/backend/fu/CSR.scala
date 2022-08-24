@@ -863,37 +863,42 @@ class CSR(implicit val p: NutCoreConfig) extends NutCoreModule with HasCSRConst{
   def readWithScala(addr: Int): UInt = mapping(addr)._1
 
   if (!p.FPGAPlatform) {
-    // to monitor
-    BoringUtils.addSource(readWithScala(perfCntList("Mcycle")._1), "simCycleCnt")
-    BoringUtils.addSource(readWithScala(perfCntList("Minstret")._1), "simInstrCnt")
+    if (p.HartID == 0) {
+      // to monitor
+      BoringUtils.addSource(readWithScala(perfCntList("Mcycle")._1), "simCycleCnt")
+      BoringUtils.addSource(readWithScala(perfCntList("Minstret")._1), "simInstrCnt")
 
-    if (hasPerfCnt && false) { // disable perfcnt for visibility
-      // display all perfcnt when nutcoretrap is executed
-      val PrintPerfCntToCSV = true
-      when (nutcoretrap) {
-        printf("======== PerfCnt =========\n")
-        perfCntList.toSeq.sortBy(_._2._1).map { case (name, (addr, boringId)) =>
-          printf("%d <- " + name + "\n", readWithScala(addr)) }
-        if(PrintPerfCntToCSV){
-        printf("======== PerfCntCSV =========\n\n")
-        perfCntList.toSeq.sortBy(_._2._1).map { case (name, (addr, boringId)) =>
-          printf(name + ", ")}
-        printf("\n\n\n")
-        perfCntList.toSeq.sortBy(_._2._1).map { case (name, (addr, boringId)) =>
-          printf("%d, ", readWithScala(addr)) }
-        printf("\n\n\n")
+      if (hasPerfCnt && false) { // disable perfcnt for visibility
+        // display all perfcnt when nutcoretrap is executed
+        val PrintPerfCntToCSV = true
+        when(nutcoretrap) {
+          printf("======== PerfCnt =========\n")
+          perfCntList.toSeq.sortBy(_._2._1).map { case (name, (addr, boringId)) =>
+            printf("%d <- " + name + "\n", readWithScala(addr))
+          }
+          if (PrintPerfCntToCSV) {
+            printf("======== PerfCntCSV =========\n\n")
+            perfCntList.toSeq.sortBy(_._2._1).map { case (name, (addr, boringId)) =>
+              printf(name + ", ")
+            }
+            printf("\n\n\n")
+            perfCntList.toSeq.sortBy(_._2._1).map { case (name, (addr, boringId)) =>
+              printf("%d, ", readWithScala(addr))
+            }
+            printf("\n\n\n")
+          }
         }
       }
-    }
 
-    // for differential testing
-    BoringUtils.addSource(RegNext(priviledgeMode), "difftestMode")
-    BoringUtils.addSource(RegNext(mstatus), "difftestMstatus")
-    BoringUtils.addSource(RegNext(mstatus & sstatusRmask), "difftestSstatus")
-    BoringUtils.addSource(RegNext(mepc), "difftestMepc")
-    BoringUtils.addSource(RegNext(sepc), "difftestSepc")
-    BoringUtils.addSource(RegNext(mcause), "difftestMcause")
-    BoringUtils.addSource(RegNext(scause), "difftestScause")
+      // for differential testing
+      BoringUtils.addSource(RegNext(priviledgeMode), "difftestMode")
+      BoringUtils.addSource(RegNext(mstatus), "difftestMstatus")
+      BoringUtils.addSource(RegNext(mstatus & sstatusRmask), "difftestSstatus")
+      BoringUtils.addSource(RegNext(mepc), "difftestMepc")
+      BoringUtils.addSource(RegNext(sepc), "difftestSepc")
+      BoringUtils.addSource(RegNext(mcause), "difftestMcause")
+      BoringUtils.addSource(RegNext(scause), "difftestScause")
+    }
   } else {
     if (!p.FPGAPlatform) {
       BoringUtils.addSource(readWithScala(perfCntList("Mcycle")._1), "simCycleCnt")

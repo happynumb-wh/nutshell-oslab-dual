@@ -52,7 +52,7 @@ class AXI4CLINT(nrHart: Int = 1, sim: Boolean = false) extends AXI4SlaveModule(n
 
   if (sim) {
     val isWFI = WireInit(false.B)
-    BoringUtils.addSink(isWFI, "isWFI")
+    BoringUtils.addSink(isWFI, "isWFI0")
     when (isWFI) { mtime := mtime + 100000.U }
   }
 

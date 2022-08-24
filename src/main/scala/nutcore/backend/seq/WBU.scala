@@ -43,14 +43,16 @@ class WBU(implicit val p: NutCoreConfig) extends NutCoreModule{
   BoringUtils.addSource(falseWire, "perfCntCondMultiCommit")
   
   if (!p.FPGAPlatform) {
-    BoringUtils.addSource(RegNext(io.in.valid), "difftestCommit")
-    BoringUtils.addSource(falseWire, "difftestMultiCommit")
-    BoringUtils.addSource(RegNext(SignExt(io.in.bits.decode.cf.pc, AddrBits)), "difftestThisPC")
-    BoringUtils.addSource(RegNext(io.in.bits.decode.cf.instr), "difftestThisINST")
-    BoringUtils.addSource(RegNext(io.in.bits.isMMIO), "difftestIsMMIO")
-    BoringUtils.addSource(RegNext(io.in.bits.decode.cf.instr(1,0)=/="b11".U), "difftestIsRVC")
-    BoringUtils.addSource(falseWire, "difftestIsRVC2")
-    BoringUtils.addSource(RegNext(io.in.bits.intrNO), "difftestIntrNO")
+    if (p.HartID == 0) {
+      BoringUtils.addSource(RegNext(io.in.valid), "difftestCommit")
+      BoringUtils.addSource(falseWire, "difftestMultiCommit")
+      BoringUtils.addSource(RegNext(SignExt(io.in.bits.decode.cf.pc, AddrBits)), "difftestThisPC")
+      BoringUtils.addSource(RegNext(io.in.bits.decode.cf.instr), "difftestThisINST")
+      BoringUtils.addSource(RegNext(io.in.bits.isMMIO), "difftestIsMMIO")
+      BoringUtils.addSource(RegNext(io.in.bits.decode.cf.instr(1, 0) =/= "b11".U), "difftestIsRVC")
+      BoringUtils.addSource(falseWire, "difftestIsRVC2")
+      BoringUtils.addSource(RegNext(io.in.bits.intrNO), "difftestIntrNO")
+    }
   } else {
     BoringUtils.addSource(io.in.valid, "ilaWBUvalid")
     BoringUtils.addSource(io.in.bits.decode.cf.pc, "ilaWBUpc")
