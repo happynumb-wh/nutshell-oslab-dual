@@ -31,13 +31,13 @@ class ClintIO(val nrHart: Int) extends Bundle {
 class AXI4CLINT(nrHart: Int = 1, sim: Boolean = false) extends AXI4SlaveModule(new AXI4Lite, new ClintIO(nrHart)) {
   val mtime = RegInit(0.U(64.W))  // unit: us
   val mtimecmp: List[UInt] = List.fill(nrHart)(RegInit(0.U(64.W)))
-  val mtimecmpMap: Map[Int, (UInt, UInt => UInt)] = mtimecmp.zipWithIndex.map {
-    case (r, hart) => RegMap(0x4000 + hart * 8, r)
+  val mtimecmpMap: Map[Int, (UInt, UInt, UInt => UInt, UInt)] = mtimecmp.zipWithIndex.map {
+    case (r, hart) => MaskedRegMap(0x4000 + hart * 8, r)
   }.toMap
 
   val msip: List[UInt] = List.fill(nrHart)(RegInit(0.U(32.W)))
-  val msipMap: Map[Int, (UInt, UInt => UInt)] = msip.zipWithIndex.map {
-    case (r, hart) => RegMap(0x0 + hart * 4, r)
+  val msipMap: Map[Int, (UInt, UInt, UInt => UInt, UInt)] = msip.zipWithIndex.map {
+    case (r, hart) => MaskedRegMap(0x0 + hart * 4, r)
   }.toMap
 
   val clk = (if (!sim) 40 /* 40MHz / 1000000 */ else 10000)
@@ -56,15 +56,15 @@ class AXI4CLINT(nrHart: Int = 1, sim: Boolean = false) extends AXI4SlaveModule(n
     when (isWFI) { mtime := mtime + 100000.U }
   }
 
-  val mapping: Map[Int, (UInt, UInt => UInt)] = Map(
-    RegMap(0x8000, freq),
-    RegMap(0x8008, inc),
-    RegMap(0xbff8, mtime)
+  val mapping: Map[Int, (UInt, UInt, UInt => UInt, UInt)] = Map(
+    MaskedRegMap(0x8000, freq),
+    MaskedRegMap(0x8008, inc),
+    MaskedRegMap(0xbff8, mtime)
   ) ++ msipMap ++ mtimecmpMap
   def getOffset(addr: UInt) = addr(15,0)
 
-  RegMap.generate(mapping, getOffset(raddr), in.r.bits.data,
-    getOffset(waddr), in.w.fire(), in.w.bits.data, MaskExpand(in.w.bits.strb))
+  MaskedRegMap.generate(mapping, getOffset(raddr), in.r.bits.data,
+    getOffset(waddr), in.w.fire(), in.w.bits.data)
 
   io.extra.get.mtip.zip(mtimecmp).foreach {
     case (t, cmp) => t := RegNext(mtime >= cmp)
