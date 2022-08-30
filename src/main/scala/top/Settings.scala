@@ -101,6 +101,11 @@ object DualSettings {
     "HasPrefetch" -> false,
     "HasDualCore" -> true
   )
+
+  def uncached(): Map[String, Boolean] = apply() ++ Map(
+    "HasDcache" -> false,
+    "HasIcache" -> false
+  )
 }
 
 object Settings {
