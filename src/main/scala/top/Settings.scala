@@ -103,8 +103,7 @@ object DualSettings {
   )
 
   def uncached(): Map[String, Boolean] = apply() ++ Map(
-    "HasDcache" -> false,
-    "HasIcache" -> false
+    "HasDcache" -> false
   )
 }
 
