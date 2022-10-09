@@ -103,7 +103,7 @@ class CrossCoreCoherence(n: Int) extends Module with HasNutCoreParameter {
     val in: Vec[SimpleBusUC] = Flipped(Vec(n, new SimpleBusUC()))
     val out = new SimpleBusUC()
   })
-  val Xbar: SimpleBusCrossbarNto1 = Module(new SimpleBusCrossbarNto1(n))
+  val Xbar: SimpleBusCrossbarNto1 = Module(new SimpleBusCrossbarNto1(n, supportsLock = true))
   Xbar.io.in zip io.in foreach { case (c, c1) => c <> c1 }
   io.out <> Xbar.io.out
 }

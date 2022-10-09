@@ -596,6 +596,8 @@ class Cache_fake(implicit val cacheConfig: CacheConfig, val ncConfig: NutCoreCon
   val size = RegEnable(io.in.req.bits.size, io.in.req.fire())
   val wdata = RegEnable(io.in.req.bits.wdata, io.in.req.fire())
   val wmask = RegEnable(io.in.req.bits.wmask, io.in.req.fire())
+  val lock = RegEnable(io.in.req.bits.lock, io.in.req.fire())
+  val unlock = RegEnable(io.in.req.bits.unlock, io.in.req.fire())
 
   io.in.req.ready := (state === s_idle)
   io.in.resp.valid := (state === s_wait_resp) && (!needFlush)
@@ -613,7 +615,7 @@ class Cache_fake(implicit val cacheConfig: CacheConfig, val ncConfig: NutCoreCon
 
   io.out.mem.req.bits.apply(addr = reqaddr,
     cmd = cmd, size = size,
-    wdata = wdata, wmask = wmask)
+    wdata = wdata, wmask = wmask, lock = lock, unlock = unlock)
   io.out.mem.req.valid := (state === s_memReq)
   io.out.mem.resp.ready := true.B
   

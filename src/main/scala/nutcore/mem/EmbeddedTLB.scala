@@ -130,6 +130,8 @@ class EmbeddedTLB(implicit val tlbConfig: TLBConfig, val ncConfig: NutCoreConfig
     io.out.req.bits.wmask := io.in.req.bits.wmask
     io.out.req.bits.wdata := io.in.req.bits.wdata
     io.out.req.bits.user.map(_ := io.in.req.bits.user.getOrElse(0.U))
+    io.out.req.bits.lock := io.in.req.bits.lock
+    io.out.req.bits.unlock := io.in.req.bits.unlock
   }.otherwise {
     if (tlbname == "dtlb") { io.out.req <> tlbEmpty.io.out}
     else { io.out.req <> tlbExec.io.out }

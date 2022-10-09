@@ -54,13 +54,17 @@ class SimpleBusReqBundle(val userBits: Int = 0, val addrBits: Int = 32, val idBi
   val wdata = Output(UInt(DataBits.W))
   val user = if (userBits > 0) Some(Output(UInt(userBits.W))) else None
   val id = if (idBits > 0) Some(Output(UInt(idBits.W))) else None
+  // lock bus for atomic instructions
+  val lock = Output(Bool())
+  val unlock = Output(Bool())
 
   override def toPrintable: Printable = {
     p"addr = 0x${Hexadecimal(addr)}, cmd = ${cmd}, size = ${size}, " +
     p"wmask = 0x${Hexadecimal(wmask)}, wdata = 0x${Hexadecimal(wdata)}"
   }
 
-  def apply(addr: UInt, cmd: UInt, size: UInt, wdata: UInt, wmask: UInt, user: UInt = 0.U, id: UInt = 0.U) {
+  def apply(addr: UInt, cmd: UInt, size: UInt, wdata: UInt, wmask: UInt, user: UInt = 0.U, id: UInt = 0.U,
+            lock: Bool = false.B, unlock: Bool = false.B) {
     this.addr := addr
     this.cmd := cmd
     this.size := size
@@ -68,6 +72,8 @@ class SimpleBusReqBundle(val userBits: Int = 0, val addrBits: Int = 32, val idBi
     this.wmask := wmask
     this.user.map(_ := user)
     this.id.map(_ := id)
+    this.lock := lock
+    this.unlock := unlock
   }
 
   def isRead() = !cmd(0) && !cmd(3)
