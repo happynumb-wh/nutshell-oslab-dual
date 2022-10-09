@@ -310,8 +310,8 @@ void RvDiskIOHelper(void)
 	/* release RISC-V reset signal */
 	// *rv_reset_reg = 0x0;
   	xil_printf("transfer control to RISC-V core.\r\n");
-	gpio_base[0] = 0x1;
   	xil_printf("Reset RISC-V core.\r\n");
+	gpio_base[0] = 0x1;
 
 	do {
 		unsigned int status = rv_shared_buf[SDIO_CMD_STATUS_OFFSET];
@@ -338,11 +338,11 @@ void RvDiskIOHelper(void)
 		// buf_addr = (0x50000000 | (buf_addr & 0x0FFFFFFF));
 		buff = (BYTE *)buf_addr;
 
-		xil_printf("SDIO operation: %d \r\n", (status & CMD_TYPE_MASK));
+		// xil_printf("SDIO operation: %d \r\n", (status & CMD_TYPE_MASK));
 
-		xil_printf("Base sector: %d \r\n", sector);
-		xil_printf("# of sectors: %d \r\n", count);
-		xil_printf("Memory address: %08x \r\n", buff);
+		// xil_printf("Base sector: %d \r\n", sector);
+		// xil_printf("# of sectors: %d \r\n", count);
+		// xil_printf("Memory address: %08x \r\n", buff);
 
 		//SDIO read/write operation
 		if (status & CMD_TYPE_MASK)

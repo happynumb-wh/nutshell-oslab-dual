@@ -52,6 +52,7 @@ class EXU(implicit val p: NutCoreConfig) extends NutCoreModule {
   val lsu = Module(new UnpipelinedLSU)
   val lsuTlbPF = WireInit(false.B)
   val lsuOut = lsu.access(valid = fuValids(FuType.lsu), src1 = src1, src2 = io.in.bits.data.imm, func = fuOpType, dtlbPF = lsuTlbPF)
+  lsu.io.srcSum := io.in.bits.data.addr
   lsu.io.wdata := src2
   lsu.io.instr := io.in.bits.cf.instr
   io.out.bits.isMMIO := lsu.io.isMMIO || (AddressSpace.isMMIO(io.in.bits.cf.pc) && io.out.valid)
@@ -70,6 +71,11 @@ class EXU(implicit val p: NutCoreConfig) extends NutCoreModule {
   csr.io.cfIn.exceptionVec(storeAddrMisaligned) := lsu.io.storeAddrMisaligned
   csr.io.instrValid := io.in.valid && !io.flush
   csr.io.isBackendException := false.B
+  csr.io.lsuIsLoad := io.in.bits.ctrl.lsuIsLoad
+  csr.io.lsuInSTrustedZone := io.in.bits.ctrl.inSTrustedZone
+  csr.io.lsuInUTrustedZone := io.in.bits.ctrl.inUTrustedZone
+  csr.io.lsuPermitLibLoad := io.in.bits.ctrl.permitLibLoad
+  csr.io.lsuPermitLibStore := io.in.bits.ctrl.permitLibStore
   io.out.bits.intrNO := csr.io.intrNO
   csr.io.isBackendException := false.B
   csr.io.out.ready := true.B

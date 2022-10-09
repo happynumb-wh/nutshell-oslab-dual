@@ -33,12 +33,18 @@ class CtrlSignalIO extends NutCoreBundle {
   val isSrc2Forward = Output(Bool())
   val noSpecExec = Output(Bool())  // This inst can not be speculated
   val isBlocked = Output(Bool())   // This inst requires pipeline to be blocked
+  val inSTrustedZone = Output(Bool()) // DASICS PC check
+  val inUTrustedZone = Output(Bool())
+  val permitLibLoad = Output(Bool())  // CSR Dasics bounds check
+  val permitLibStore = Output(Bool())
+  val lsuIsLoad = Output(Bool())  // Load or LR (Instead of store)
 }
 
 class DataSrcIO extends NutCoreBundle {
   val src1 = Output(UInt(XLEN.W))
   val src2 = Output(UInt(XLEN.W))
   val imm  = Output(UInt(XLEN.W))
+  val addr = Output(UInt(XLEN.W))   // To gain LSU address in ISU stage
 }
 
 class RedirectIO extends NutCoreBundle {
@@ -59,8 +65,8 @@ class CtrlFlowIO extends NutCoreBundle {
   val pc = Output(UInt(VAddrBits.W))
   val pnpc = Output(UInt(VAddrBits.W))
   val redirect = new RedirectIO
-  val exceptionVec = Output(Vec(16, Bool()))
-  val intrVec = Output(Vec(12, Bool()))
+  val exceptionVec = Output(Vec(ExceptionTypes, Bool()))
+  val intrVec = Output(Vec(InterruptTypes, Bool()))
   val brIdx = Output(UInt(4.W))
   val isRVC = Output(Bool())
   val crossPageIPFFix = Output(Bool())

@@ -29,6 +29,7 @@ trait HasNutCoreParameter {
   val XLEN = if (Settings.get("IsRV32")) 32 else 64
   val HasMExtension = true
   val HasCExtension = Settings.get("EnableRVC")
+  val HasNExtension = Settings.get("EnableRVN")
   val HasDiv = true
   val HasIcache = Settings.get("HasIcache")
   val HasDcache = Settings.get("HasDcache")
@@ -42,6 +43,9 @@ trait HasNutCoreParameter {
   val DataBytes = DataBits / 8
   val EnableVirtualMemory = if (Settings.get("HasDTLB") && Settings.get("HasITLB")) true else false
   val EnablePerfCnt = true
+  val ExceptionTypes = 30
+  val InterruptTypes = 12
+  val ImpID = 0xda220002L // mimpid CSR, for implementation version: DASICS UCAS-OS 2022v2
   // Parameter for Argo's OoO backend
   val EnableMultiIssue = Settings.get("EnableMultiIssue")
   val EnableOutOfOrderExec = Settings.get("EnableOutOfOrderExec")
@@ -60,7 +64,21 @@ trait HasNutCoreLog { this: RawModule =>
   implicit val moduleName: String = this.name
 }
 
-abstract class NutCoreModule extends Module with HasNutCoreParameter with HasNutCoreConst with HasExceptionNO with HasBackendConst with HasNutCoreLog
+trait HasDasicsConst {
+  val dasicsLibGroups = 16
+
+  def MCFG_UCLS = 0x3
+  def MCFG_SCLS = 0x2
+  def MCFG_UENA = 0x1
+  def MCFG_SENA = 0x0
+
+  def LIBCFG_V = 0x3
+  def LIBCFG_X = 0x2
+  def LIBCFG_R = 0x1
+  def LIBCFG_W = 0x0
+}
+
+abstract class NutCoreModule extends Module with HasNutCoreParameter with HasNutCoreConst with HasExceptionNO with HasBackendConst with HasNutCoreLog with HasDasicsConst
 abstract class NutCoreBundle extends Bundle with HasNutCoreParameter with HasNutCoreConst with HasBackendConst
 
 case class NutCoreConfig (

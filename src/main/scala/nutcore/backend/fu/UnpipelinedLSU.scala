@@ -23,6 +23,7 @@ import bus.simplebus._
 import top.Settings
 
 class UnpipeLSUIO extends FunctionUnitIO {
+  val srcSum = Input(UInt(XLEN.W))  // src1 + src2 calculated in ISU
   val wdata = Input(UInt(XLEN.W))
   val instr = Input(UInt(32.W)) // Atom insts need aq rl funct3 bit from instr
   val dmem = new SimpleBusUC(addrBits = VAddrBits)
@@ -49,6 +50,7 @@ class UnpipelinedLSU(implicit val p: NutCoreConfig) extends NutCoreModule with H
     io.out.bits
   }
     val lsExecUnit = Module(new LSExecUnit)
+    lsExecUnit.io.srcSum := io.srcSum
     lsExecUnit.io.instr := DontCare
     io.dtlbPF := lsExecUnit.io.dtlbPF
 
@@ -106,7 +108,14 @@ class UnpipelinedLSU(implicit val p: NutCoreConfig) extends NutCoreModule with H
     atomALU.io.isWordOp := atomWidthW
 
     val addr = if(IndependentAddrCalcState){RegNext(src1 + src2, state === s_idle)}else{DontCare}
-    
+
+    // DASICS Protection Logics from CSR
+    val cannotAccessMemory = WireInit(false.B)
+    BoringUtils.addSink(cannotAccessMemory, "cannot_access_memory")
+    BoringUtils.addSource(valid && !scInvalid, "lsu_is_valid")
+    // Do not rely on valid in lsu_addr
+    BoringUtils.addSource(Mux(LSUOpType.isLoad(func) || LSUOpType.isStore(func), io.srcSum, src1), "lsu_addr")
+
     // StoreQueue
     // TODO: inst fence needs storeQueue to be finished
     // val enableStoreQueue = EnableStoreQueue // StoreQueue is disabled for page fault detection
@@ -139,25 +148,25 @@ class UnpipelinedLSU(implicit val p: NutCoreConfig) extends NutCoreModule with H
         lsExecUnit.io.in.bits.src2 := DontCare
         lsExecUnit.io.in.bits.func := DontCare
         lsExecUnit.io.wdata        := DontCare
-        io.in.ready                := false.B || scInvalid
-        io.out.valid               := false.B || scInvalid
-        when(valid){state := s_exec}
+        io.in.ready                := false.B || scInvalid || cannotAccessMemory
+        io.out.valid               := false.B || scInvalid || cannotAccessMemory
+        when(valid && !cannotAccessMemory){state := s_exec}
 
         if(!IndependentAddrCalcState){
-          lsExecUnit.io.in.valid     := io.in.valid && !atomReq
+          lsExecUnit.io.in.valid     := io.in.valid && !atomReq && !cannotAccessMemory
           lsExecUnit.io.out.ready    := io.out.ready 
-          lsExecUnit.io.in.bits.src1 := src1 + src2
+          lsExecUnit.io.in.bits.src1 := io.srcSum
           lsExecUnit.io.in.bits.src2 := DontCare
           lsExecUnit.io.in.bits.func := func
           lsExecUnit.io.wdata        := io.wdata
-          io.in.ready                := lsExecUnit.io.out.fire() || scInvalid
-          io.out.valid               := lsExecUnit.io.out.valid  || scInvalid
+          io.in.ready                := lsExecUnit.io.out.fire() || scInvalid || cannotAccessMemory
+          io.out.valid               := lsExecUnit.io.out.valid  || scInvalid || cannotAccessMemory
           state := s_idle
         }
 
-        when(amoReq){state := s_amo_l}
-        when(lrReq){state := s_lr}
-        when(scReq){state := Mux(scInvalid, s_idle, s_sc)}
+        when(amoReq && !cannotAccessMemory){state := s_amo_l}
+        when(lrReq && !cannotAccessMemory){state := s_lr}
+        when(scReq && !cannotAccessMemory){state := Mux(scInvalid, s_idle, s_sc)}
         
       } 
 
@@ -435,7 +444,7 @@ class LSExecUnit(implicit val p: NutCoreConfig) extends NutCoreModule {
 
   val isAMO = WireInit(false.B)
   BoringUtils.addSink(isAMO, "ISAMO2")
-  BoringUtils.addSource(addr, "LSUADDR")
+  BoringUtils.addSource(addr, "LSUEXECADDR")
 
   io.loadAddrMisaligned :=  valid && !isStore && !isAMO && !addrAligned
   io.storeAddrMisaligned := valid && (isStore || isAMO) && !addrAligned
