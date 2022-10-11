@@ -160,6 +160,7 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
     xbar1.io.in(1) <> nutcore1.io.dmem.mem
 
     nutcore1.io.frontend := DontCare
+    nutcore1.io.frontend.req.valid := false.B
 
     val memport1 = xbar1.io.out.toMemPort()
     memport1.resp.bits.data := DontCare
