@@ -97,7 +97,6 @@ object EmbededSettings {
 
 object DualSettings {
   def apply(): Map[String, Boolean] = Map(
-    "HasL2cache" -> false,
     "HasPrefetch" -> false,
     "HasDualCore" -> true
   )
