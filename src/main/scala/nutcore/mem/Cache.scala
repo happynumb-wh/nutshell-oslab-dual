@@ -419,7 +419,8 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig, val ncConfig: Nu
       io.out.bits.cmd := Mux(respToL1Last, SimpleBusCmd.readLast, SimpleBusCmd.readBurst)
     }.otherwise {
       io.out.bits.rdata := Mux(hit, dataRead, inRdataRegDemand)
-      io.out.bits.cmd := req.cmd
+      io.out.bits.cmd := Mux(io.in.bits.req.isReadSingle(), SimpleBusCmd.readLast,
+        Mux(io.in.bits.req.isWriteSingle(), SimpleBusCmd.writeResp, req.cmd))
     }
   } else {
     io.out.bits.rdata := Mux(hit, dataRead, inRdataRegDemand)

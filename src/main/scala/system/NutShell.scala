@@ -160,6 +160,7 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
     xbar1.io.in(1) <> nutcore1.io.dmem.mem
 
     nutcore1.io.frontend := DontCare
+    nutcore1.io.frontend.req.valid := false.B
 
     val memport1 = xbar1.io.out.toMemPort()
     memport1.resp.bits.data := DontCare
@@ -170,7 +171,23 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
     val ccc = Module(new CrossCoreCoherence(2))
     ccc.io.in(0) <> xbar.io.out
     ccc.io.in(1) <> xbar1.io.out
-    memAddrMap.io.in <> ccc.io.out
+
+    val cccMem = if (HasL2cache) {
+      val l2cacheOut = Wire(new SimpleBusC)
+      val l2cacheIn = ccc.io.out
+      val l2Empty = Wire(Bool())
+      l2cacheOut <> Cache(
+        in = l2cacheIn, mmio = 0.U.asTypeOf(new SimpleBusUC) :: Nil, flush = "b00".U, empty = l2Empty
+      )(CacheConfig(name = "l2cache", totalSize = 128, cacheLevel = 2), p)
+      l2cacheOut.coh.resp.ready := true.B
+      l2cacheOut.coh.req.valid := false.B
+      l2cacheOut.coh.req.bits := DontCare
+      l2cacheOut.mem
+    } else {
+      ccc.io.out
+    }
+
+    memAddrMap.io.in <> cccMem
 
     nutcore1.io.imem.coh.resp.ready := true.B
     nutcore1.io.imem.coh.req.valid := false.B
