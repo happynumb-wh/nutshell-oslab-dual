@@ -96,6 +96,10 @@ object AddressSpace extends HasNutCoreParameter {
   def mmio = List(
     (0x30000000L, 0x10000000L),  // internal devices, such as CLINT and PLIC
     (Settings.getLong("MMIOBase"), Settings.getLong("MMIOSize")) // external devices
+  ) ++ (
+    if (Settings.get("PLPeriphery")) {
+      List((0x70000000L, 0x10000000L))  // external devices implemented in PL
+    } else { List() }
   )
 
   def isMMIO(addr: UInt) = mmio.map(range => {

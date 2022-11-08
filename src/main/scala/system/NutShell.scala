@@ -100,7 +100,8 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
   nutcore.io.imem.coh.req.bits := DontCare
 
   val addrSpace = List(
-    (Settings.getLong("MMIOBase"), Settings.getLong("MMIOSize")), // external devices
+    if (Settings.get("PLPeriphery")) { (0x70000000L, 0x90000000L) }
+    else { (Settings.getLong("MMIOBase"), Settings.getLong("MMIOSize")) }, // external devices
     (0x38000000L, 0x00010000L), // CLINT
     (0x3c000000L, 0x04000000L)  // PLIC
   )
