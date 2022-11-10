@@ -45,8 +45,10 @@ set_property is_global_include true [get_files $inc_files]
 
 # Add files for nutshell
 lappend src_files "[file normalize "${fpga_dir}/../build/TopMain.v"]"
-# Add files for e1000
+# Add file for e1000
 lappend src_files "[file normalize "${fpga_dir}/resource/axi4e1000.v"]"
+# Add file for axi4sd
+lappend src_files "[file normalize "${fpga_dir}/resource/axi4sd.v"]"
 
 add_files -norecurse -fileset sources_1 $src_files
 if {[info exists xdc_files]} {
