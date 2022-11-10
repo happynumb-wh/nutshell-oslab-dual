@@ -331,10 +331,10 @@ module	axi4e1000 #(
 	end
 
 	// Actual read & write module
-	e1000_regs e1000_regs_u #(
+	e1000_regs #(
 		.E_ADDR_WIDTH(AW),
 		.E_DATA_WIDTH(DW)
-	) (
+	) e1000_regs_u (
 		.CLK(S_AXI_ACLK),
 		.RESET(!S_AXI_ARESETN),
 		.WADDR(waddr[AW+ADDR_LSB-1:ADDR_LSB]),
@@ -349,7 +349,7 @@ module	axi4e1000 #(
 		.RDATA(e1000_regs_rdata),
 		.REN(!read_response_stall &&(!OPT_READ_SIDEEFFECTS || valid_read_request)),
 
-		.HAS_INT(has_int);
+		.HAS_INT(has_int)
 	);
 
 	//
