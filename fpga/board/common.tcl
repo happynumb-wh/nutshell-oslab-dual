@@ -49,6 +49,8 @@ lappend src_files "[file normalize "${fpga_dir}/../build/TopMain.v"]"
 lappend src_files "[file normalize "${fpga_dir}/resource/axi4e1000.v"]"
 # Add file for axi4sd
 lappend src_files "[file normalize "${fpga_dir}/resource/axi4sd.v"]"
+# Add file for oslabext
+lappend src_files "[file normalize "${fpga_dir}/resource/axi4oslabext.v"]"
 
 add_files -norecurse -fileset sources_1 $src_files
 if {[info exists xdc_files]} {
