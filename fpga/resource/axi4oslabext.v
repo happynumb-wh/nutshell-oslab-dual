@@ -409,7 +409,7 @@ module oslabext_regs #(
 	// Tspeed_reg
 	always @(posedge CLK) begin
 		if (RESET)
-			tspeed_reg <= 32'h0000_00001;
+			tspeed_reg <= 32'h0000_00000;
 		else if (WEN && tspeed_w) begin 
 			if (WSTRB[0])	tspeed_reg[7:0]	 <= WDATA[7:0];
 			if (WSTRB[1])	tspeed_reg[15:8] <= WDATA[15:8];
